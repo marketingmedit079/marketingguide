@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marcom Request Bot — Medit</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f3;--surface:#fff;--border:#e4e2db;
+  --text:#1a1917;--muted:#6b6963;--hint:#9b9890;
+  --accent:#1a56db;--accent-bg:#eff4ff;--accent-bd:#c7d9ff;
+  --success:#0f6e56;--success-bg:#e1f5ee;
+  --warn:#854f0b;--warn-bg:#faeeda;
+  --danger:#a32d2d;--danger-bg:#fcebeb;
+  --purple:#534AB7;--purple-bg:#EEEDFE;
+  --r:10px;--rs:6px;
+  --font:'Pretendard','Apple SD Gothic Neo','Segoe UI',sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-mark{width:26px;height:26px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center}
+.logo-mark svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round}
+.logo-text{font-size:13px;font-weight:600;letter-spacing:-.3px}
+.logo-sub{font-size:11px;color:var(--muted);margin-left:3px}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.chip{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:var(--warn-bg);color:var(--warn);transition:all .2s}
+.chip.done{background:var(--success-bg);color:var(--success);border-color:transparent}
+.chip.saving{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-bd)}
+.lang-tgl{display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:2px}
+.lang-btn{font-size:11px;font-weight:500;padding:3px 7px;border-radius:4px;border:none;cursor:pointer;background:transparent;color:var(--muted);transition:all .15s}
+.lang-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.layout{display:grid;grid-template-columns:250px 1fr 320px;flex:1;width:100%;max-width:1320px;margin:0 auto}
+.sidebar{border-right:1px solid var(--border);padding:14px 10px;background:var(--surface);display:flex;flex-direction:column;gap:3px}
+.sb-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--hint);padding:0 6px;margin:6px 0 3px}
+.type-btn{display:flex;align-items:flex-start;gap:8px;padding:8px 9px;border-radius:var(--rs);border:1px solid transparent;cursor:pointer;background:transparent;text-align:left;width:100%;transition:all .12s}
+.type-btn:hover{background:var(--bg);border-color:var(--border)}
+.type-btn.active{background:var(--accent-bg);border-color:var(--accent-bd)}
+.tdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.tlbl{font-size:12.5px;font-weight:500;line-height:1.3}
+.tsub{font-size:11px;color:var(--muted);margin-top:1px}
+.chat-area{display:flex;flex-direction:column;height:calc(100vh - 52px)}
+.msgs{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.msg{display:flex;gap:8px}
+.msg.user{align-self:flex-end;flex-direction:row-reverse;max-width:460px}
+.msg.bot{max-width:560px}
+.av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.av.bot{background:var(--accent);color:#fff}
+.av.user{background:var(--border);color:var(--muted)}
+.bbl{padding:9px 12px;border-radius:var(--r);font-size:13px;line-height:1.65}
+.msg.bot .bbl{background:var(--surface);border:1px solid var(--border);border-radius:2px var(--r) var(--r) var(--r)}
+.msg.user .bbl{background:var(--accent);color:#fff;border-radius:var(--r) 2px var(--r) var(--r)}
+.qrs{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.qr{font-size:11.5px;padding:4px 10px;border-radius:16px;border:1px solid var(--accent-bd);background:var(--accent-bg);color:var(--accent);cursor:pointer;transition:all .12s;font-family:var(--font)}
+.qr:hover{background:var(--accent);color:#fff}
+.typing{display:flex;align-items:center;gap:3px;padding:9px 12px}
+.typing span{width:5px;height:5px;border-radius:50%;background:var(--hint);animation:bounce .9s ease-in-out infinite}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+.sys-msg{align-self:center;font-size:11.5px;color:var(--hint);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 12px}
+.inp-area{border-top:1px solid var(--border);padding:11px 16px;background:var(--surface);display:flex;gap:8px;align-items:flex-end}
+.chat-inp{flex:1;border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-size:13px;font-family:var(--font);resize:none;min-height:40px;max-height:100px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s;line-height:1.5}
+.chat-inp:focus{border-color:var(--accent);background:var(--surface)}
+.send-btn{width:36px;height:36px;border-radius:var(--rs);background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s}
+.send-btn:hover{opacity:.85}
+.send-btn:disabled{opacity:.35;cursor:not-allowed}
+.send-btn svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.rpanel{border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;height:calc(100vh - 52px);overflow:hidden}
+.rp-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.rp-tab{flex:1;padding:10px 0;font-size:12px;font-weight:500;color:var(--muted);text-align:center;cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;transition:all .15s}
+.rp-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.rp-tab:disabled{opacity:.35;cursor:not-allowed}
+.rp-pane{display:none;flex:1;overflow-y:auto;flex-direction:column;min-height:0}
+.rp-pane.active{display:flex}
+.info-body{padding:11px 13px;display:flex;flex-direction:column;gap:7px}
+.frow{display:flex;flex-direction:column;gap:2px}
+.fk{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--hint)}
+.fv{font-size:11.5px;color:var(--text);background:var(--bg);border-radius:var(--rs);padding:5px 8px;min-height:24px;word-break:break-word;line-height:1.5}
+.fv.empty{color:var(--hint);font-style:italic}
+.fv.filled{border-left:2px solid var(--accent)}
+.prog-w{height:3px;background:var(--bg);border-radius:2px;margin:2px 0 5px}
+.prog-b{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+.tbadge{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;margin-bottom:3px}
+.draft-body{padding:12px 13px;display:flex;flex-direction:column;gap:10px}
+.draft-divider{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);background:var(--accent-bg);border-radius:6px;padding:5px 9px;margin:4px 0 2px}
+.draft-sec{display:flex;flex-direction:column;gap:5px}
+.draft-sec-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--hint)}
+.draft-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rs);padding:9px 46px 9px 11px;font-size:12px;line-height:1.7;color:var(--text);position:relative}
+.copy-btn{position:absolute;top:6px;right:7px;font-size:10px;padding:2px 7px;border-radius:4px;border:0.5px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s}
+.copy-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ctag{font-size:10px;background:var(--accent-bg);color:var(--accent);padding:1px 5px;border-radius:3px;margin-right:4px}
+.draft-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px 16px;text-align:center;flex:1}
+.draft-ph svg{width:28px;height:28px;stroke:var(--hint);fill:none;stroke-width:1.5;stroke-linecap:round}
+.draft-ph p{font-size:12px;color:var(--hint);line-height:1.7}
+.gen-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 16px;flex:1}
+.gen-wrap p{font-size:12px;color:var(--muted)}
+.gen-dots{display:flex;gap:5px}
+.gen-dots span{width:6px;height:6px;border-radius:50%;background:var(--accent-bd);animation:bounce .9s ease-in-out infinite}
+.gen-dots span:nth-child(2){animation-delay:.15s}
+.gen-dots span:nth-child(3){animation-delay:.3s}
+.exp-wrap{border-top:1px solid var(--border);padding:11px 13px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.submit-btn{padding:10px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;border:none;background:var(--accent);color:#fff;font-family:var(--font);transition:all .15s;width:100%}
+.submit-btn:hover:not(:disabled){opacity:.88}
+.submit-btn:disabled{opacity:.38;cursor:not-allowed}
+.submit-btn.ok{background:var(--success)}
+.draft-btn{padding:9px;border-radius:var(--rs);font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid var(--purple);background:var(--purple-bg);color:var(--purple);font-family:var(--font);transition:all .15s;width:100%}
+.draft-btn:hover:not(:disabled){background:var(--purple);color:#fff}
+.draft-btn:disabled{opacity:.38;cursor:not-allowed;border-color:var(--border);background:var(--bg);color:var(--muted)}
+.save-info{font-size:11px;text-align:center;padding:4px 8px;border-radius:var(--rs);display:none}
+.save-info.ok{background:var(--success-bg);color:var(--success);display:block}
+.save-info.err{background:var(--danger-bg);color:var(--danger);display:block}
+.divider{border:none;border-top:1px solid var(--border)}
+.toast{position:fixed;bottom:18px;right:18px;z-index:999;background:#1a1917;color:#fff;font-size:12px;padding:8px 14px;border-radius:var(--rs);opacity:0;transition:opacity .2s;pointer-events:none;max-width:280px;line-height:1.5}
+.toast.show{opacity:1}
+
+
+
+
+
+
+
+
+
+/* ── 달력 피커 ── */
+.cal-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;width:260px;box-shadow:0 4px 16px rgba(0,0,0,.08);}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.cal-nav{width:26px;height:26px;border:none;background:var(--bg);border-radius:var(--rs);cursor:pointer;font-size:14px;color:var(--text);display:flex;align-items:center;justify-content:center;transition:background .12s;}
+.cal-nav:hover{background:var(--border);}
+.cal-month{font-size:13px;font-weight:600;color:var(--text);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-dow{font-size:10px;font-weight:600;text-align:center;color:var(--hint);padding:2px 0 4px;}
+.cal-day{font-size:12px;text-align:center;padding:5px 2px;border-radius:5px;cursor:pointer;color:var(--text);transition:all .1s;border:none;background:transparent;}
+.cal-day:hover:not(.cal-empty):not(.cal-past){background:var(--accent-bg);color:var(--accent);}
+.cal-day.cal-today{font-weight:600;color:var(--accent);}
+.cal-day.cal-selected{background:var(--accent);color:#fff !important;font-weight:600;}
+.cal-day.cal-empty,.cal-day.cal-past{color:var(--hint);cursor:not-allowed;opacity:.4;}
+.cal-confirm{width:100%;margin-top:10px;padding:8px;border:none;border-radius:var(--rs);background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font);}
+.cal-confirm:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ── 가이드 툴팁 ── */
+.guide-bubble{background:var(--surface);border:1px solid var(--accent-bd);border-radius:var(--r);padding:11px 13px;font-size:12px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word;max-width:340px;position:relative;}
+.guide-bubble::before{content:'';position:absolute;left:-7px;top:12px;width:12px;height:12px;background:var(--surface);border-left:1px solid var(--accent-bd);border-bottom:1px solid var(--accent-bd);transform:rotate(45deg);}
+.guide-badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--accent);background:var(--accent-bg);border-radius:4px;padding:1px 6px;margin-bottom:5px;}
+.guide-close{float:right;border:none;background:transparent;font-size:14px;color:var(--hint);cursor:pointer;line-height:1;margin-left:6px;padding:0;}
+.guide-close:hover{color:var(--text);}
+/* i 아이콘 버튼 */
+.i-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--accent-bg);border:1px solid var(--accent-bd);color:var(--accent);font-size:10px;font-weight:700;cursor:pointer;font-style:normal;line-height:1;flex-shrink:0;font-family:var(--font);transition:all .12s;vertical-align:middle;margin-left:4px;}
+.i-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* ── 복수선택 체크박스 버튼 ── */
+.multi-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.mopt{font-size:12px;padding:5px 11px;border-radius:16px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;transition:all .12s;font-family:var(--font);display:flex;align-items:center;gap:5px;}
+.mopt:hover{border-color:var(--accent-bd);background:var(--accent-bg);color:var(--accent);}
+.mopt.selected{border-color:var(--accent);background:var(--accent);color:#fff;}
+.mopt-check{width:13px;height:13px;border-radius:3px;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;}
+.multi-confirm{margin-top:8px;padding:6px 14px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);}
+.multi-confirm:disabled{opacity:.38;cursor:not-allowed;}
+/* ── 우측 패널 수정 ── */
+.fv.filled{border-left:2px solid var(--accent);cursor:pointer;transition:background .12s;}
+.fv.filled:hover{background:var(--accent-bg);}
+.fv.filled:hover::after{content:' ✎';font-size:10px;color:var(--accent);opacity:.7;}
+.edit-hint{font-size:10px;color:var(--hint);text-align:right;padding:2px 4px 6px;display:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark"><svg viewBox="0 0 13 13"><path d="M2 6.5h9M6.5 2l4.5 4.5-4.5 4.5"/></svg></div>
+    <span class="logo-text">Marcom Request</span>
+    <span class="logo-sub">Medit</span>
+  </div>
+  <div class="hdr-r">
+    <span id="chip" class="chip">입력 중</span>
+    <div class="lang-tgl">
+      <button class="lang-btn active" onclick="setLang('ko')">한국어</button>
+      <button class="lang-btn" onclick="setLang('en')">English</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-lbl">요청 유형</div>
+    <button class="type-btn" data-type="online_promo" onclick="selectType(this)">
+      <span class="tdot" style="background:#534AB7"></span>
+      <div><div class="tlbl">온라인 프로모션</div><div class="tsub">SNS · 뉴스레터 · 이미지</div></div>
+    </button>
+    <button class="type-btn" data-type="paid_media" onclick="selectType(this)">
+      <span class="tdot" style="background:#185FA5"></span>
+      <div><div class="tlbl">유료 광고</div><div class="tsub">Meta · Google · LinkedIn</div></div>
+    </button>
+    <button class="type-btn" data-type="event" onclick="selectType(this)">
+      <span class="tdot" style="background:#993C1D"></span>
+      <div><div class="tlbl">이벤트 / 전시</div><div class="tsub">웨비나 · 전시회 · 세미나</div></div>
+    </button>
+    <button class="type-btn" data-type="offline_material" onclick="selectType(this)">
+      <span class="tdot" style="background:#3B6D11"></span>
+      <div><div class="tlbl">오프라인 자재</div><div class="tsub">배너 · 브로슈어 · 인쇄물</div></div>
+    </button>
+    <button class="type-btn" data-type="video" onclick="selectType(this)">
+      <span class="tdot" style="background:#854F0B"></span>
+      <div><div class="tlbl">영상 제작</div><div class="tsub">제품 · 교육 · 홍보 영상</div></div>
+    </button>
+    <button class="type-btn" data-type="other" onclick="selectType(this)">
+      <span class="tdot" style="background:#5F5E5A"></span>
+      <div><div class="tlbl">기타</div><div class="tsub">위 항목 외 요청</div></div>
+    </button>
+  </aside>
+
+  <main class="chat-area">
+    <div class="msgs" id="msgs"></div>
+    <div class="inp-area">
+      <textarea class="chat-inp" id="inp" rows="1" placeholder="메시지를 입력하세요…"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMsg()" disabled>
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </main>
+
+  <aside class="rpanel">
+    <div class="rp-tabs">
+      <button class="rp-tab active" id="tab-info" onclick="switchTab('info')">수집 정보</button>
+      <button class="rp-tab" id="tab-draft" onclick="switchTab('draft')" disabled>콘텐츠 초안</button>
+    </div>
+    <div class="rp-pane active" id="pane-info">
+      <div class="info-body" id="rp-body">
+        <p style="font-size:12px;color:var(--hint);line-height:1.7">요청 유형을 선택하면<br>항목이 여기 표시됩니다.</p>
+      </div>
+    </div>
+    <div class="rp-pane" id="pane-draft">
+      <div class="draft-body" id="draft-body">
+        <div class="draft-ph">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <p>제출 완료 후<br>아래 버튼을 눌러<br>초안을 생성하세요.</p>
+        </div>
+      </div>
+    </div>
+    <div class="exp-wrap">
+      <div class="divider" style="margin-bottom:4px"></div>
+      <button class="submit-btn" id="btn-submit" disabled onclick="submitToSheets()">Submit</button>
+      <button class="draft-btn" id="btn-draft" disabled onclick="generateDraft()">콘텐츠 초안 생성</button>
+      <div id="save-info" class="save-info"></div>
+    </div>
+  </aside>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const GEMINI_KEY='AIzaSyCqlqk6qM4mo1NBUyXFj3ITyVkDeKEJdOE';
+const GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_KEY;
+
+/* ── Microsoft Graph API 설정 ── */
+const MS_CLIENT_ID  = 'a77824f7-391c-4b9a-8874-b4cb787b2955';
+const MS_TENANT_ID  = '1a869239-5ca3-402e-bc04-c0cb308ef1ab';
+const MS_REDIRECT   = 'https://marketingmedit079.github.io/marketingguide/';
+const MS_SCOPE      = 'Files.ReadWrite Sites.ReadWrite.All User.Read';
+/* SharePoint Excel 파일 경로 */
+const SP_SHARE_ID   = 'u!aHR0cHM6Ly9tZWRpdGNvbXBhbnktbXkuc2hhcmVwb2ludC5jb20vOng6L2cvcGVyc29uYWwvaHl1bmp1bmdfa2ltX21lZGl0X2NvbS9JUURGLVdYeXNUcEtTYi1meEgtT0JwN1dBUzBqbnR5ckpVQVJMaE1TQ0hyanM4dz9lPWR4VzdDeg';
+const SP_SHEET_NAME = 'Requests';
+
+let msToken = null; /* 로그인 후 저장 */
+
+
+function switchTab(tab){
+  ['info','draft'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('pane-'+t).classList.toggle('active',t===tab);
+  });
+}
+
+/* ── 초안 프롬프트 ── */
+const DRAFT_PROMPTS={
+  online_promo:{
+    ko:d=>{
+      const hasPaid=d.needs_paid&&(d.needs_paid.includes('예')||d.needs_paid.toLowerCase().includes('yes'));
+      const paidPart=hasPaid?`,"paid_headlines":["헤드라인1 40자이내","헤드라인2","헤드라인3"],"paid_body":["광고본문1 125자이내","광고본문2"],"paid_cta":["CTA1","CTA2"]`:'';
+      return `당신은 Medit(덴탈 구강스캐너 글로벌 브랜드) 마케팅 카피라이터입니다.
+채널:${d.owned_channel||''} / 요약:${d.one_line_summary||''} / 상세:${d.content_detail||''} / 성과:${d.expected_outcome||''} / 참고:${d.reference_url||'없음'}${hasPaid?' / 유료광고플랫폼:'+d.paid_channel+' / 광고예산:'+d.paid_budget+' / 랜딩:'+d.landing_url:''}
+순수 JSON만 출력(마크다운 없음):
+{"sns_instagram":"인스타그램 캡션 이모지포함 150자내외","sns_linkedin":"링크드인 전문적톤 200자내외","newsletter_subjects":["제목1","제목2","제목3"],"newsletter_body":"뉴스레터 본문 300자내외","hashtags":"해시태그10개 공백구분"${paidPart}}`;
+    },
+    en:d=>{
+      const hasPaid=d.needs_paid&&(d.needs_paid.includes('예')||d.needs_paid.toLowerCase().includes('yes'));
+      const paidPart=hasPaid?`,"paid_headlines":["Headline1 max40","Headline2","Headline3"],"paid_body":["Body1 max125","Body2"],"paid_cta":["CTA1","CTA2"]`:'';
+      return `You are a copywriter for Medit (global dental intraoral scanner brand).
+channel:${d.owned_channel||''} / summary:${d.one_line_summary||''} / details:${d.content_detail||''} / outcome:${d.expected_outcome||''} / ref:${d.reference_url||'N/A'}${hasPaid?' / paid_platform:'+d.paid_channel+' / budget:'+d.paid_budget+' / landing:'+d.landing_url:''}
+Output pure JSON only (no markdown):
+{"sns_instagram":"Instagram caption with emojis ~150 chars","sns_linkedin":"Professional LinkedIn ~200 chars","newsletter_subjects":["subject1","subject2","subject3"],"newsletter_body":"Newsletter body ~300 chars","hashtags":"10 hashtags space-separated"${paidPart}}`;
+    }
+  },
+  paid_media:{
+    ko:d=>`당신은 Medit(덴탈 구강스캐너 글로벌 브랜드) 퍼포먼스 마케터입니다.
+플랫폼:${d.paid_channel||''} / 목적:${d.objective||''} / 국가:${d.target_country||''} / 예산:${d.budget||''} / 요약:${d.one_line_summary||''} / 상세:${d.content_detail||''} / 랜딩:${d.landing_url||''}
+순수 JSON만 출력(마크다운 없음):
+{"meta_headlines":["헤드라인1 40자이내","헤드라인2","헤드라인3"],"meta_body":["본문1 125자이내","본문2"],"google_headlines":["15자이내1","15자이내2","15자이내3"],"google_descriptions":["90자이내1","90자이내2"],"linkedin_intro":"링크드인소개 150자내외","cta_list":["CTA1","CTA2","CTA3"]}`,
+    en:d=>`You are a performance marketer for Medit (global dental intraoral scanner brand).
+platform:${d.paid_channel||''} / objective:${d.objective||''} / country:${d.target_country||''} / budget:${d.budget||''} / summary:${d.one_line_summary||''} / details:${d.content_detail||''} / landing:${d.landing_url||''}
+Output pure JSON only (no markdown):
+{"meta_headlines":["Headline1 max40","Headline2","Headline3"],"meta_body":["Body1 max125","Body2"],"google_headlines":["max15chars1","max15chars2","max15chars3"],"google_descriptions":["max90chars1","max90chars2"],"linkedin_intro":"LinkedIn intro ~150 chars","cta_list":["CTA1","CTA2","CTA3"]}`
+  }
+};
+
+function draftSec(title,items){
+  if(!items||!items.length)return'';
+  let h=`<div class="draft-sec"><div class="draft-sec-title">${title}</div>`;
+  items.forEach(({text,tag})=>{
+    if(!text)return;
+    const tg=tag?`<span class="ctag">${tag}</span>`:'';
+    const safe=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    const cv=text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    h+=`<div class="draft-card">${tg}${safe}<button class="copy-btn" onclick="cpDraft(this,'${cv}')">복사</button></div>`;
+  });
+  return h+'</div>';
+}
+
+function renderDraft(type,data){
+  const body=document.getElementById('draft-body');
+  let html='';
+  if(type==='online_promo'){
+    html+=draftSec('Instagram 캡션',[{text:data.sns_instagram}]);
+    html+=draftSec('LinkedIn 캡션',[{text:data.sns_linkedin}]);
+    html+=draftSec('뉴스레터 제목 (3가지)',(data.newsletter_subjects||[]).map(t=>({text:t})));
+    html+=draftSec('뉴스레터 본문',[{text:data.newsletter_body}]);
+    html+=draftSec('해시태그',[{text:data.hashtags}]);
+    // 유료 광고 초안 — needs_paid=예일 때만 렌더링
+    if(data.paid_headlines||data.paid_body){
+      const ch=(S.collected.paid_channel||'광고');
+      html+=`<div class="draft-divider">${ch} 광고 소재</div>`;
+      html+=draftSec('광고 헤드라인',(data.paid_headlines||[]).map(t=>({text:t,tag:'40자'})));
+      html+=draftSec('광고 본문',(data.paid_body||[]).map(t=>({text:t,tag:'125자'})));
+      html+=draftSec('CTA 문구',(data.paid_cta||[]).map(t=>({text:t,tag:'CTA'})));
+    }
+  }else if(type==='paid_media'){
+    const ch=(S.collected.paid_channel||'').toLowerCase();
+    const all=!ch;
+    if(all||ch.includes('meta')||ch.includes('instagram')||ch.includes('facebook')){
+      html+=draftSec('Meta 헤드라인',(data.meta_headlines||[]).map(t=>({text:t,tag:'40자'})));
+      html+=draftSec('Meta 본문',(data.meta_body||[]).map(t=>({text:t,tag:'125자'})));
+    }
+    if(all||ch.includes('google')){
+      html+=draftSec('Google 검색광고 제목',(data.google_headlines||[]).map(t=>({text:t,tag:'15자'})));
+      html+=draftSec('Google 광고 설명',(data.google_descriptions||[]).map(t=>({text:t,tag:'90자'})));
+    }
+    if(all||ch.includes('linkedin')){
+      html+=draftSec('LinkedIn 소개문',[{text:data.linkedin_intro}]);
+    }
+    html+=draftSec('CTA 문구',(data.cta_list||[]).map(t=>({text:t,tag:'CTA'})));
+  }
+  body.innerHTML=html||`<p style="font-size:12px;color:var(--hint);padding:16px">초안 파싱 오류. 재시도해주세요.</p>`;
+}
+
+async function generateDraft(){
+  if(!['online_promo','paid_media'].includes(S.type))return;
+  const btn=document.getElementById('btn-draft');
+  btn.disabled=true;btn.textContent='생성 중…';
+  switchTab('draft');
+  document.getElementById('draft-body').innerHTML=`<div class="gen-wrap"><div class="gen-dots"><span></span><span></span><span></span></div><p>${S.lang==='ko'?'Gemini가 초안을 작성 중입니다…':'Gemini is generating drafts…'}</p></div>`;
+  const prompt=DRAFT_PROMPTS[S.type][S.lang](S.collected);
+  try{
+    const raw_text=await callGemini('You are a JSON generator. Output only valid JSON, no markdown fences, no explanation.',prompt,1200);
+    const raw=raw_text.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(raw);
+    renderDraft(S.type,parsed);
+    btn.textContent=S.lang==='ko'?'초안 재생성':'Regenerate';
+    btn.disabled=false;
+    toast(S.lang==='ko'?'초안이 생성되었습니다.':'Draft generated.');
+  }catch(err){
+    document.getElementById('draft-body').innerHTML=`<div class="draft-ph"><p style="color:var(--danger)">생성 실패: ${err.message}<br><br>다시 시도해주세요.</p></div>`;
+    btn.textContent=S.lang==='ko'?'다시 시도':'Retry';
+    btn.disabled=false;
+  }
+}
+
+function cpDraft(btn,text){
+  cpText(text);btn.textContent='복사됨 ✓';
+  setTimeout(()=>btn.textContent='복사',1500);
+}
+
+/* ── Fields ── */
+const COMMON=[
+  {key:'requester_email',ko:'신청자 이메일 (@medit.com)',en:'Your email (@medit.com)',col:'신청자 이메일',email:true},
+  {key:'team',ko:'소속 팀/부서',en:'Team / Department',col:'소속 팀/부서'},
+  {key:'objective',ko:'요청 주요 목적',en:'Primary objective',col:'주요 목적',
+   guide:{ko:'이번 요청의 주요 목적을 선택해 주세요.\n• 브랜드 인지도 향상\n• 리드 확보 (신규 잠재 고객)\n• 기존 고객 유지/재구매 유도\n• 제품 출시/업데이트 홍보\n• 이벤트/웨비나 등록 유도',
+          en:'Select the primary goal of this request.\n• Brand awareness\n• Lead generation (new prospects)\n• Customer retention / re-engagement\n• Product launch / update promotion\n• Event / webinar registration drive'}},
+  {key:'expected_outcome',ko:'기대 성과',en:'Expected outcome',col:'기대 성과',
+   guide:{ko:'뉴스레터/SNS 배포를 통해 기대하는 구체적인 성과를 입력해 주세요.\n예시: "i900M 5건 추가 계약", "웨비나 등록 50명", "링크 클릭 200회"\n수치 기반으로 작성할수록 성과 측정이 쉬워집니다.',
+          en:'Describe the specific outcomes you expect from newsletter/SNS distribution.\nExample: "5 additional i900M contracts", "50 webinar registrations", "200 link clicks"\nThe more specific the number, the easier it is to measure results.'}},
+  {key:'deadline',ko:'희망 완료 일정',en:'Preferred timeline',col:'희망 일정',date:true,
+   guide:{ko:'콘텐츠가 필요한 날짜를 선택해 주세요.\n⚠️ 일반 콘텐츠는 최소 2주, 영상은 최소 4주 전에 요청하시길 권장합니다.',
+          en:'Select the date by which you need the content.\n⚠️ We recommend submitting requests at least 2 weeks in advance (4 weeks for video content).'}}
+];
+const TYPE_FIELDS={
+  online_promo:[
+    {key:'owned_channel',ko:'Owned 채널',en:'Owned media channel',col:'Owned 채널',
+     multi:true,
+     options:{ko:['뉴스레터 (월 2회)','SNS 이미지','SNS 영상'],en:['Newsletter','SNS Image','SNS Video']},
+     guide:{ko:'Owned 미디어 채널을 최대 2개까지 선택할 수 있습니다.\n• 뉴스레터: 월 2회 발송되는 이메일 뉴스레터\n• SNS 이미지: 정적 이미지 기반 소셜 포스트\n• SNS 영상: 릴스/쇼츠 등 영상 콘텐츠',
+            en:'Select up to 2 owned media channels for support.\n• Newsletter: email newsletter sent 2x/month\n• SNS Image: static image-based social posts\n• SNS Video: reels/shorts-style video content'}},
+    {key:'one_line_summary',ko:'요청 한 줄 요약',en:'One-sentence summary',col:'한 줄 요약',
+     guide:{ko:'요청 내용을 한 문장으로 요약합니다. 아래 형식을 참고하세요.\n예시: "i900M 신제품 출시 홍보를 위한 Instagram 이미지 콘텐츠 2종 제작"',
+            en:'Summarize your request in one sentence. Use the format below as a reference.\nExample: "Create 2 Instagram image posts for i900M new product launch promotion"'}},
+    {key:'content_detail',ko:'콘텐츠 상세 내용',en:'Content details',col:'콘텐츠 상세',
+     guide:{ko:'콘텐츠에 포함되어야 할 핵심 메시지, 소구점, 톤앤매너 등을 상세히 입력해 주세요.\n예시:\n- 핵심 메시지: 빠른 스캔 속도, 높은 정밀도\n- 톤: 전문적이고 신뢰감 있는\n- 금기 표현: 경쟁사 직접 비교 금지',
+            en:'Describe the key message, selling points, and tone for the content.\nExample:\n- Key message: fast scan speed, high precision\n- Tone: professional and trustworthy\n- Note: no direct competitor comparisons'}},
+    {key:'reference_url',ko:'참고 링크/URL',en:'Reference link',col:'참고 URL',
+     guide:{ko:'제작 범위 파악에 도움이 되는 자료를 공유해 주세요.\n• 기존 캠페인 링크\n• 참고 이미지/영상 URL\n• 관련 제품 페이지 URL\n파일이 있다면 SharePoint 링크로 공유해 주세요.',
+            en:'Share any materials that help us assess the scope.\n• Existing campaign links\n• Reference image/video URLs\n• Related product page URLs\nFor files, please share via SharePoint link.'}},
+    {key:'needs_paid',ko:'유료 광고도 함께 진행하나요?',en:'Do you also need paid media?',col:'유료 광고 필요',
+     options:{ko:['예 — 유료 광고 포함','아니요 — Owned 미디어만'],en:['Yes — include paid media','No — owned media only']},
+     guide:{ko:'유료 광고(Paid Media)는 Meta, Google, LinkedIn 등의 플랫폼에 예산을 집행하는 광고입니다.\nOwned 미디어(뉴스레터/SNS)와 함께 진행하면 도달 범위를 확장할 수 있습니다.',
+            en:'Paid media refers to ads run on platforms like Meta, Google, or LinkedIn with a budget.\nCombining with owned media (newsletter/SNS) can significantly expand your reach.'},
+     branch:true}
+  ],
+  online_promo_paid:[
+    {key:'paid_channel',ko:'광고 플랫폼',en:'Ad platform',col:'광고 플랫폼',options:{ko:['Meta Ads','Google Ads','LinkedIn Ads','기타'],en:['Meta Ads','Google Ads','LinkedIn Ads','Other']}},
+    {key:'paid_budget',ko:'광고 예산 (통화 포함)',en:'Ad budget (incl. currency)',col:'광고 예산'},
+    {key:'landing_url',ko:'랜딩 페이지 URL',en:'Landing page URL',col:'랜딩 URL'}
+  ],
+  paid_media:[
+    {key:'paid_channel',ko:'광고 플랫폼',en:'Ad platform',col:'광고 플랫폼',options:{ko:['Meta Ads','Google Ads','LinkedIn Ads','기타'],en:['Meta Ads','Google Ads','LinkedIn Ads','Other']}},
+    {key:'target_country',ko:'타깃 국가',en:'Target country',col:'타깃 국가'},
+    {key:'budget',ko:'광고 예산',en:'Ad budget',col:'예산'},
+    {key:'one_line_summary',ko:'캠페인 한 줄 요약',en:'Campaign summary',col:'한 줄 요약'},
+    {key:'content_detail',ko:'광고 소재/메시지',en:'Ad creative details',col:'소재 상세'},
+    {key:'landing_url',ko:'랜딩 페이지 URL',en:'Landing page URL',col:'랜딩 URL'}
+  ],
+  event:[
+    {key:'event_title',ko:'이벤트 제목',en:'Event title',col:'이벤트명'},
+    {key:'event_type',ko:'이벤트 유형',en:'Event type',col:'이벤트 유형',options:{ko:['전시회/Trade Show','웨비나','세미나','고객 이벤트','기타'],en:['Exhibition/Trade Show','Webinar','Seminar','Customer Event','Other']}},
+    {key:'event_start',ko:'시작일',en:'Start date',col:'시작일',date:true},
+    {key:'event_end',ko:'종료일',en:'End date',col:'종료일',date:true},
+    {key:'event_time',ko:'행사 시간 (시간대)',en:'Event time (timezone)',col:'시간'},
+    {key:'venue',ko:'장소 또는 플랫폼',en:'Venue or platform',col:'장소'},
+    {key:'target_country',ko:'대상 국가/지역',en:'Target country/region',col:'대상 국가'},
+    {key:'target_audience',ko:'타깃 오디언스',en:'Target audience',col:'타깃 오디언스'},
+    {key:'reg_fee',ko:'참가비',en:'Registration fee',col:'참가비'},
+    {key:'reg_link',ko:'등록 링크 URL',en:'Registration link',col:'등록 링크'},
+    {key:'contact_email',ko:'문의 이메일',en:'Contact email',col:'문의 이메일'},
+    {key:'short_desc',ko:'이벤트 소개',en:'Short description',col:'이벤트 소개'},
+    {key:'agenda',ko:'주요 아젠다',en:'Agenda / takeaways',col:'아젠다'},
+    {key:'speaker_name',ko:'연사 이름',en:'Speaker name',col:'연사'}
+  ],
+  offline_material:[
+    {key:'material_type',ko:'자재 유형',en:'Material type',col:'자재 유형'},
+    {key:'size_spec',ko:'사이즈 및 규격',en:'Size and specs',col:'규격'},
+    {key:'purpose',ko:'사용 목적 및 행사명',en:'Purpose and event',col:'사용 목적'},
+    {key:'target_country',ko:'사용 국가/지역',en:'Country / region',col:'국가'},
+    {key:'one_line_summary',ko:'요청 한 줄 요약',en:'One-sentence summary',col:'한 줄 요약'},
+    {key:'content_detail',ko:'인쇄 내용 상세',en:'Print content details',col:'인쇄 내용'},
+    {key:'offline_location',ko:'오프라인 행사 장소',en:'Offline event location',col:'행사 장소'}
+  ],
+  video:[
+    {key:'video_type',ko:'영상 유형',en:'Video type',col:'영상 유형',options:{ko:['제품 소개','고객 사례/후기','교육/튜토리얼','브랜드 홍보','이벤트 하이라이트','기타'],en:['Product showcase','Testimonial','Tutorial','Brand promo','Event highlight','Other']}},
+    {key:'one_line_summary',ko:'영상 한 줄 요약',en:'Video summary',col:'한 줄 요약'},
+    {key:'content_detail',ko:'영상 내용 상세',en:'Video content details',col:'영상 내용'},
+    {key:'target_audience',ko:'타깃 오디언스',en:'Target audience',col:'타깃 오디언스'},
+    {key:'reference_url',ko:'참고 영상 링크',en:'Reference video link',col:'참고 링크'}
+  ],
+  other:[
+    {key:'request_title',ko:'요청 제목',en:'Request title',col:'요청 제목'},
+    {key:'one_line_summary',ko:'요청 한 줄 요약',en:'One-sentence summary',col:'한 줄 요약'},
+    {key:'content_detail',ko:'요청 상세 내용',en:'Detailed description',col:'요청 상세'},
+    {key:'target_country',ko:'대상 국가/지역',en:'Target country/region',col:'대상 국가'},
+    {key:'budget',ko:'예산 (해당 시)',en:'Budget (if applicable)',col:'예산'}
+  ]
+};
+const TYPE_META={
+  online_promo:{ko:'온라인 프로모션',en:'Online Promotion',badge:'#EEEDFE',bt:'#3C3489'},
+  paid_media:{ko:'유료 광고',en:'Paid Media',badge:'#E6F1FB',bt:'#0C447C'},
+  event:{ko:'이벤트/전시',en:'Event/Exhibition',badge:'#FAECE7',bt:'#712B13'},
+  offline_material:{ko:'오프라인 자재',en:'Offline Materials',badge:'#EAF3DE',bt:'#27500A'},
+  video:{ko:'영상 제작',en:'Video Production',badge:'#FAEEDA',bt:'#633806'},
+  other:{ko:'기타',en:'Other',badge:'#F1EFE8',bt:'#444441'}
+};
+const SYS={
+  ko:`당신은 Medit 마케팅팀 업무 요청 접수 챗봇입니다. 필드를 하나씩 자연스럽게 질문합니다.
+규칙: 한 번에 하나만 질문 / 이전 답변 확인 후 다음 질문 / 선택지는 번호 목록 / 완료 시 "모든 항목이 입력되었습니다. [Submit] 버튼을 눌러 제출해 주세요." / JSON 코드 포함 금지 / 항상 한국어 / 이미 수집된 필드는 절대 다시 묻지 않음 / 이메일 입력 요청 시 반드시 @medit.com 도메인임을 명시.
+요청 유형:{TYPE} | 수집 완료:{DONE} | 다음 필드:{NEXT} | 선택지:{OPTIONS}
+수집 완료 목록에 있는 항목은 건너뛰고, "{NEXT}" 항목만 질문하세요.`,
+  en:`You are a marketing request intake chatbot for Medit. Ask one field at a time.
+Rules: One question per message / Acknowledge previous briefly / Present options as numbered list / When done say "All fields complete! Click [Submit] on the right." / No JSON or code / Always English / Never re-ask a field already in collected list / When asking for email, specify that only @medit.com addresses are accepted.
+Request type:{TYPE} | Collected:{DONE} | Next:{NEXT} | Options:{OPTIONS}
+Skip already-collected fields. Ask only about "{NEXT}" now.`
+};
+
+let S={lang:'ko',type:null,allFields:[],collected:{},idx:0,waiting:false,done:false,submitted:false};
+
+function setLang(l){
+  S.lang=l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',(l==='ko'&&b.textContent==='한국어')||(l==='en'&&b.textContent==='English')));
+  document.getElementById('inp').placeholder=l==='ko'?'메시지를 입력하세요…':'Type your message…';
+}
+
+function selectType(btn){
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const t=btn.dataset.type;
+  S={lang:S.lang,type:t,allFields:[...COMMON,...TYPE_FIELDS[t]],collected:{},idx:0,waiting:false,done:false,submitted:false};
+  document.getElementById('msgs').innerHTML='';
+  document.getElementById('send-btn').disabled=false;
+  document.getElementById('chip').textContent=S.lang==='ko'?'입력 중':'In progress';
+  document.getElementById('chip').className='chip';
+  document.getElementById('save-info').className='save-info';
+  document.getElementById('btn-submit').disabled=true;
+  document.getElementById('btn-draft').disabled=true;
+  const hasDraft=['online_promo','paid_media'].includes(t);
+  document.getElementById('tab-draft').disabled=!hasDraft;
+  document.getElementById('draft-body').innerHTML=`<div class="draft-ph"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><p>${hasDraft?'제출 완료 후<br>아래 버튼을 눌러<br>초안을 생성하세요.':'이 유형은<br>초안 생성을 지원하지 않습니다.'}</p></div>`;
+  switchTab('info');
+  renderPanel();
+  const m=TYPE_META[t];
+  addBot(S.lang==='ko'?`<strong>${m.ko}</strong> 요청을 시작합니다. 몇 가지 항목을 순서대로 여쭤볼게요.`
+    :`Starting a <strong>${m.en}</strong> request. I'll ask a few questions one at a time.`);
+  setTimeout(()=>askNext(),500);
+}
+
+async function askNext(){
+  if(S.idx>=S.allFields.length){finish();return;}
+  S.waiting=true;
+
+  const f=S.allFields[S.idx];
+
+  // 이메일 필드: placeholder 힌트 표시
+  const inp=document.getElementById('inp');
+  if(f.email){
+    inp.placeholder=S.lang==='ko'?'예: name@medit.com':'e.g. name@medit.com';
+  } else {
+    inp.placeholder=S.lang==='ko'?'메시지를 입력하세요…':'Type your message…';
+  }
+
+  // 복수선택 필드: 체크박스 버튼 UI
+  if(f.multi){
+    S.waiting=false;
+    const opts=f.options?f.options[S.lang]:[];
+    const label=S.lang==='ko'?f.ko:f.en;
+    const guide=S.lang==='ko'?`<strong>${label}</strong>을 선택해 주세요. (복수 선택 가능)`:`Please select <strong>${label}</strong> (multiple selection allowed)`;
+    addBotWithGuide(guide,[],f);
+    showMultiSelect(f.key, opts, f);
+    return;
+  }
+
+  // 날짜 필드: 달력 UI 표시, 텍스트 입력 비활성화
+  if(f.date){
+    S.waiting=false;
+    const inp=document.getElementById('inp');
+    const sendBtn=document.getElementById('send-btn');
+    inp.disabled=true; inp.placeholder=S.lang==='ko'?'달력에서 날짜를 선택하세요':'Select a date from the calendar';
+    sendBtn.disabled=true;
+    const label=S.lang==='ko'?f.ko:f.en;
+    // 안내 버블 먼저 표시
+    const guide=S.lang==='ko'?`<strong>${label}</strong>을 달력에서 선택해 주세요.`:`Please select <strong>${label}</strong> from the calendar below.`;
+    addBotWithGuide(guide,[],f);
+    setTimeout(()=>showCalendar(f.key, S.lang),200);
+    return;
+  }
+
+  showTyping();
+  const opts=f.options?f.options[S.lang]:[];
+  const doneStr=Object.entries(S.collected).map(([k,v])=>`${k}: ${v}`).join('; ')||'없음';
+  const sys=SYS[S.lang].replace('{TYPE}',TYPE_META[S.type][S.lang]).replace('{DONE}',doneStr).replace(/\{NEXT\}/g,f[S.lang]).replace('{OPTIONS}',opts.length?opts.join(', '):'없음');
+  try{
+    const d=await callScript({action:'chat',system:sys,userMessage:`ask: ${f[S.lang]}`});
+    const msg=d.text||fallbackQ(f);
+    hideTyping();addBotWithGuide(msg,opts,f);
+  }catch{hideTyping();addBotWithGuide(fallbackQ(f),opts,f);}
+  S.waiting=false;
+}
+
+function fallbackQ(f){return S.lang==='ko'?`${f.ko}을(를) 알려주세요.`:`Please provide: ${f.en}`;}
+
+async function sendMsg(){
+  const el=document.getElementById('inp'),txt=el.value.trim();
+  if(!txt||S.waiting||S.done)return;
+  if(!S.type){addBot(S.lang==='ko'?'먼저 왼쪽에서 요청 유형을 선택해 주세요.':'Please select a request type first.');return;}
+
+  // 이메일 필드 검증 — @medit.com 도메인만 허용
+  const f0=S.allFields[S.idx];
+  if(f0&&f0.email){
+    const hasKorean=/[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]/.test(txt);
+    if(hasKorean){
+      const errMsg=S.lang==='ko'
+        ?'⚠️ 이메일 주소에 한글을 입력할 수 없습니다.<br>영문으로 입력해 주세요. 예: name@medit.com'
+        :'⚠️ Korean characters are not allowed in email addresses.<br>Please use English only. e.g. name@medit.com';
+      addBot(errMsg);
+      el.value=''; el.style.height='auto';
+      return;
+    }
+    const emailOk=/^[^\s@]+@medit\.com$/i.test(txt);
+    if(!emailOk){
+      const errMsg=S.lang==='ko'
+        ?'⚠️ <strong>@medit.com</strong> 이메일 주소만 입력 가능합니다.<br>예: name@medit.com'
+        :'⚠️ Only <strong>@medit.com</strong> email addresses are allowed.<br>e.g. name@medit.com';
+      addBot(errMsg);
+      el.value=''; el.style.height='auto';
+      return;
+    }
+  }
+
+  addUser(txt);el.value='';el.style.height='auto';
+  const f=S.allFields[S.idx];
+  if(f){
+    S.collected[f.key]=txt;S.idx++;
+    if(f.branch&&f.key==='needs_paid'){
+      const yes=txt.includes('예')||txt.toLowerCase().includes('yes');
+      if(yes&&!S.allFields.some(x=>x.key==='paid_channel')){
+        S.allFields.splice(S.idx,0,...TYPE_FIELDS.online_promo_paid);
+      }
+    }
+    renderPanel();
+  }
+  setTimeout(()=>askNext(),350);
+}
+
+function finish(){
+  S.done=true;
+  addBot(S.lang==='ko'?'모든 항목이 입력되었습니다. 오른쪽 <strong>[Submit]</strong> 버튼을 눌러 제출해 주세요.':'All fields complete! Click the <strong>[Submit]</strong> button on the right.');
+  document.getElementById('chip').textContent=S.lang==='ko'?'제출 대기':'Ready';
+  document.getElementById('chip').className='chip saving';
+  document.getElementById('send-btn').disabled=true;
+  document.getElementById('btn-submit').disabled=false;
+  renderPanel();
+}
+
+async function submitToSheets(){
+  if(S.submitted||!SCRIPT_URL)return;
+  const btn=document.getElementById('btn-submit'),info=document.getElementById('save-info');
+  btn.disabled=true;btn.textContent=S.lang==='ko'?'저장 중…':'Saving…';
+  document.getElementById('chip').textContent=S.lang==='ko'?'저장 중':'Saving';
+  const row=buildRow();
+  try{
+    const d=await callScript({action:'save',row});
+    if(d.error)throw new Error(d.error);
+    S.submitted=true;
+    btn.textContent=S.lang==='ko'?'제출 완료 ✓':'Submitted ✓';btn.classList.add('ok');
+    document.getElementById('chip').textContent=S.lang==='ko'?'완료':'Done';
+    document.getElementById('chip').className='chip done';
+    info.className='save-info ok';
+    info.textContent=S.lang==='ko'?'Google Sheets에 저장되었습니다.':'Saved to Google Sheets.';
+    addSysMsg(S.lang==='ko'?'요청이 Google Sheets에 저장되었습니다.':'Request saved to Google Sheets.');
+    if(['online_promo','paid_media'].includes(S.type)){
+      document.getElementById('btn-draft').disabled=false;
+      const tabDraft=document.getElementById('tab-draft-btn');
+      if(tabDraft) tabDraft.disabled=false;
+      const badge=document.getElementById('draft-badge');
+      if(badge) badge.style.display='inline-block';
+      // 초안 탭 안내 문구 업데이트
+      const draftBody=document.getElementById('draft-body');
+      if(draftBody) draftBody.innerHTML='<div class="draft-ph"><p>'+(S.lang==='ko'?'"초안 생성" 버튼을 눌러<br>콘텐츠 초안을 자동 생성하세요.':'Click "Generate Draft"<br>to auto-create content drafts.')+'</p></div>';
+    }
+  }catch(err){
+    btn.disabled=false;btn.textContent=S.lang==='ko'?'Submit':'Submit';
+    info.className='save-info err';info.textContent=`오류: ${err.message}`;
+  }
+}
+
+function buildRow(){
+  const m=TYPE_META[S.type],now=new Date().toISOString().slice(0,16).replace('T',' ');
+  const row={'요청유형':m[S.lang],'제출일시':now};
+  S.allFields.forEach(f=>{row[f.col]=S.collected[f.key]||'';});
+  row['상태']=S.lang==='ko'?'검토 중':'In Review';
+  return row;
+}
+
+function renderPanel(){
+  if(!S.type)return;
+  const m=TYPE_META[S.type],total=S.allFields.length,done=Object.keys(S.collected).length;
+  let html=`<span class="tbadge" style="background:${m.badge};color:${m.bt}">${m[S.lang]}</span>`;
+  html+=`<div class="prog-w"><div class="prog-b" style="width:${Math.round(done/total*100)}%"></div></div>`;
+  S.allFields.forEach((f,i)=>{
+    if(i===COMMON.length)html+=`<div style="border-top:1px solid var(--border);margin:3px 0"></div>`;
+    const v=S.collected[f.key];
+    const editAttr=v&&!S.done?` onclick="editField(${i})" title="${S.lang==='ko'?'클릭하여 수정':'Click to edit'}"`:'' ;
+    html+=`<div class="frow"><div class="fk">${f[S.lang]}</div><div class="fv ${v?'filled':'empty'}"${editAttr}>${v||(S.lang==='ko'?'대기 중…':'Pending…')}</div></div>`;
+  });
+  document.getElementById('rp-body').innerHTML=html;
+}
+
+let typingEl=null;
+function showTyping(){const c=document.getElementById('msgs');typingEl=document.createElement('div');typingEl.className='msg bot';typingEl.innerHTML='<div class="av bot">VD</div><div class="bbl"><div class="typing"><span></span><span></span><span></span></div></div>';c.appendChild(typingEl);c.scrollTop=c.scrollHeight;}
+function hideTyping(){if(typingEl){typingEl.remove();typingEl=null;}}
+function addBot(html,opts=[]){const c=document.getElementById('msgs'),d=document.createElement('div');d.className='msg bot';const qrs=opts.length?`<div class="qrs">${opts.map(o=>`<button class="qr" onclick="selectQR('${o.replace(/'/g,"\\'")}')"> ${o}</button>`).join('')}</div>`:'';d.innerHTML=`<div class="av bot">VD</div><div class="bbl">${html}${qrs}</div>`;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function addUser(t){const c=document.getElementById('msgs'),d=document.createElement('div');d.className='msg user';d.innerHTML=`<div class="av user">ME</div><div class="bbl">${t}</div>`;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function addSysMsg(t){const c=document.getElementById('msgs'),d=document.createElement('div');d.className='sys-msg';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function selectQR(v){document.getElementById('inp').value=v;sendMsg();}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+function cpText(t){navigator.clipboard?.writeText(t).catch(()=>fbCopy(t))||fbCopy(t);}
+function fbCopy(t){const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+addBot(S.lang==='ko'
+  ?'안녕하세요! 마케팅 요청 접수 챗봇입니다.<br>왼쪽에서 <strong>요청 유형</strong>을 선택해 시작해 주세요.'
+  :"Hello! I'm the Medit Marcom request bot.<br>Please <strong>select a request type</strong> on the left.");
+
+/* ── 달력 피커 ── */
+const CAL_STATE={year:0,month:0,selected:null,fieldKey:null};
+
+function showCalendar(fieldKey, lang){
+  const now=new Date();
+  CAL_STATE.year=now.getFullYear();
+  CAL_STATE.month=now.getMonth();
+  CAL_STATE.selected=null;
+  CAL_STATE.fieldKey=fieldKey;
+
+  const msgs=document.getElementById('msgs');
+  // 기존 달력 제거
+  document.querySelectorAll('.cal-msg').forEach(e=>e.remove());
+
+  const wrap=document.createElement('div');
+  wrap.className='msg bot cal-msg';
+  wrap.innerHTML='<div class="av bot">VD</div><div class="bbl" id="cal-bbl"></div>';
+  msgs.appendChild(wrap);
+  msgs.scrollTop=msgs.scrollHeight;
+  renderCalendar(lang);
+}
+
+function renderCalendar(lang){
+  const bbl=document.getElementById('cal-bbl');
+  if(!bbl)return;
+  const l=lang||S.lang;
+  const MONTHS_KO=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const MONTHS_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const DAYS_KO=['일','월','화','수','목','금','토'];
+  const DAYS_EN=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const months=l==='ko'?MONTHS_KO:MONTHS_EN;
+  const days=l==='ko'?DAYS_KO:DAYS_EN;
+
+  const y=CAL_STATE.year, m=CAL_STATE.month;
+  const firstDay=new Date(y,m,1).getDay();
+  const lastDate=new Date(y,m+1,0).getDate();
+  const today=new Date(); today.setHours(0,0,0,0);
+
+  let grid='';
+  days.forEach(d=>{ grid+=`<div class="cal-dow">${d}</div>`; });
+  for(let i=0;i<firstDay;i++) grid+=`<button class="cal-day cal-empty" disabled></button>`;
+  for(let d=1;d<=lastDate;d++){
+    const date=new Date(y,m,d);
+    const isPast=date<today;
+    const isToday=date.getTime()===today.getTime();
+    const isSel=CAL_STATE.selected===d;
+    const cls=['cal-day',isPast?'cal-past':'',isToday?'cal-today':'',isSel?'cal-selected':''].filter(Boolean).join(' ');
+    grid+=`<button class="${cls}" onclick="selectDay(${d},'${l}')" ${isPast?'disabled':''}>${d}</button>`;
+  }
+
+  const selStr=CAL_STATE.selected
+    ?`${y}-${String(m+1).padStart(2,'0')}-${String(CAL_STATE.selected).padStart(2,'0')}`
+    :'';
+
+  bbl.innerHTML=`<div class="cal-wrap">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="moveMonth(-1,'${l}')">&#8249;</button>
+      <span class="cal-month">${y}년 ${months[m]}</span>
+      <button class="cal-nav" onclick="moveMonth(1,'${l}')">&#8250;</button>
+    </div>
+    <div class="cal-grid">${grid}</div>
+    <button class="cal-confirm" id="cal-confirm" onclick="confirmDate('${l}')" ${CAL_STATE.selected?'':'disabled'}>
+      ${selStr?selStr:(l==='ko'?'날짜를 선택하세요':'Select a date')}
+    </button>
+  </div>`;
+}
+
+function selectDay(d, lang){
+  CAL_STATE.selected=d;
+  renderCalendar(lang);
+}
+
+function moveMonth(dir, lang){
+  CAL_STATE.month+=dir;
+  if(CAL_STATE.month<0){CAL_STATE.month=11;CAL_STATE.year--;}
+  if(CAL_STATE.month>11){CAL_STATE.month=0;CAL_STATE.year++;}
+  CAL_STATE.selected=null;
+  renderCalendar(lang);
+}
+
+function confirmDate(lang){
+  if(!CAL_STATE.selected)return;
+  const y=CAL_STATE.year, m=CAL_STATE.month, d=CAL_STATE.selected;
+  const dateStr=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+  // 달력 제거
+  document.querySelectorAll('.cal-msg').forEach(e=>e.remove());
+
+  // 입력창 복구
+  const inp=document.getElementById('inp');
+  inp.disabled=false;
+  inp.placeholder=lang==='ko'?'메시지를 입력하세요…':'Type your message…';
+  document.getElementById('send-btn').disabled=false;
+
+  // 선택된 날짜를 사용자 메시지처럼 처리
+  addUser(dateStr);
+  const f=S.allFields[S.idx];
+  if(f&&f.key===CAL_STATE.fieldKey){
+    S.collected[f.key]=dateStr;
+    S.idx++;
+    renderPanel();
+  }
+  setTimeout(()=>askNext(),350);
+}
+
+/* ── 가이드 i 버튼 + 툴팁 ── */
+function addBotWithGuide(html, opts, field){
+  const lang = S.lang;
+  const guideText = field && field.guide ? field.guide[lang] : null;
+
+  const c = document.getElementById('msgs');
+  const d = document.createElement('div');
+  d.className = 'msg bot';
+
+  const qrs = opts && opts.length
+    ? '<div class="qrs">' + opts.map(o =>
+        '<button class="qr" onclick="selectQR(\'' + o.replace(/'/g,"\\'") + '\')">' + o + '</button>'
+      ).join('') + '</div>'
+    : '';
+
+  const iBtn = guideText
+    ? '<button class="i-btn" onclick="toggleGuide(this)" data-guide="' + encodeURIComponent(guideText) + '" title="' + (lang==='ko'?'입력 가이드':'Input guide') + '">i</button>'
+    : '';
+
+  d.innerHTML = '<div class="av bot">VD</div><div class="bbl">' + html + iBtn + qrs + '</div>';
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+}
+
+function toggleGuide(btn){
+  const lang = S.lang;
+  // 이미 열린 가이드 버블 닫기
+  const existing = btn.parentElement.querySelector('.guide-msg');
+  if(existing){ existing.remove(); btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; return; }
+
+  const text = decodeURIComponent(btn.dataset.guide || '');
+  if(!text) return;
+
+  const label = lang==='ko' ? '입력 가이드' : 'Input guide';
+  const closeLabel = lang==='ko' ? '닫기' : 'Close';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'msg bot guide-msg';
+  wrap.style.cssText = 'margin-top:-8px;padding-left:34px;';
+  wrap.innerHTML =
+    '<div class="guide-bubble">' +
+    '<span class="guide-badge">ⓘ ' + label + '</span>' +
+    '<button class="guide-close" onclick="closeGuide(this)" title="' + closeLabel + '">✕</button>' +
+    '<div style="clear:both;margin-top:2px;">' + text.replace(/\n/g,'<br>') + '</div>' +
+    '</div>';
+
+  // i 버튼 활성 스타일
+  btn.style.background = 'var(--accent)';
+  btn.style.color = '#fff';
+  btn.style.borderColor = 'var(--accent)';
+
+  btn.closest('.msg').insertAdjacentElement('afterend', wrap);
+  const msgs = document.getElementById('msgs');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function closeGuide(closeBtn){
+  const bubble = closeBtn.closest('.guide-msg');
+  if(!bubble) return;
+  // i 버튼 스타일 복구
+  const prevMsg = bubble.previousElementSibling;
+  if(prevMsg){
+    const iBtn = prevMsg.querySelector('.i-btn');
+    if(iBtn){ iBtn.style.background=''; iBtn.style.color=''; iBtn.style.borderColor=''; }
+  }
+  bubble.remove();
+}
+
+/* ── 복수선택 UI ── */
+const MULTI_STATE={key:null,selected:[]};
+
+function showMultiSelect(fieldKey, opts, field){
+  const msgs=document.getElementById('msgs');
+  document.querySelectorAll('.multi-msg').forEach(e=>e.remove());
+  MULTI_STATE.key=fieldKey; MULTI_STATE.selected=[];
+
+  const inp=document.getElementById('inp');
+  inp.disabled=true;
+  inp.placeholder=S.lang==='ko'?'아래에서 선택 후 확인 버튼을 눌러주세요':'Select below then click Confirm';
+  document.getElementById('send-btn').disabled=true;
+
+  const wrap=document.createElement('div');
+  wrap.className='msg bot multi-msg';
+  wrap.id='multi-wrap';
+  msgs.appendChild(wrap); msgs.scrollTop=msgs.scrollHeight;
+  renderMultiSelect(opts);
+}
+
+function renderMultiSelect(opts){
+  const wrap=document.getElementById('multi-wrap');
+  if(!wrap)return;
+  const sel=MULTI_STATE.selected;
+  const confirmLabel=S.lang==='ko'?`확인 (${sel.length}개 선택됨)`:`Confirm (${sel.length} selected)`;
+
+  let btns=opts.map((o,i)=>{
+    const isSel=sel.includes(o);
+    const chk=isSel?'✓':'';
+    return `<button class="mopt${isSel?' selected':''}" onclick="toggleMultiOpt(this,'${o.replace(/'/g,"\'")}',event)">`
+      +`<span class="mopt-check">${chk}</span>${o}</button>`;
+  }).join('');
+
+  wrap.innerHTML='<div class="av bot">VD</div><div class="bbl">'
+    +'<div class="multi-opts">'+btns+'</div>'
+    +'<button class="multi-confirm" id="multi-confirm" onclick="confirmMulti()" '+(sel.length===0?'disabled':'')+'>'+confirmLabel+'</button>'
+    +'</div>';
+}
+
+function toggleMultiOpt(btn, val, e){
+  e.stopPropagation();
+  const idx=MULTI_STATE.selected.indexOf(val);
+  if(idx>=0) MULTI_STATE.selected.splice(idx,1);
+  else MULTI_STATE.selected.push(val);
+  const f=S.allFields.find(x=>x.key===MULTI_STATE.key);
+  const opts=f&&f.options?f.options[S.lang]:[];
+  renderMultiSelect(opts);
+}
+
+function confirmMulti(){
+  if(MULTI_STATE.selected.length===0)return;
+  const val=MULTI_STATE.selected.join(', ');
+
+  document.querySelectorAll('.multi-msg').forEach(e=>e.remove());
+  const inp=document.getElementById('inp');
+  inp.disabled=false;
+  inp.placeholder=S.lang==='ko'?'메시지를 입력하세요…':'Type your message…';
+  document.getElementById('send-btn').disabled=false;
+
+  addUser(val);
+  const f=S.allFields[S.idx];
+  if(f&&f.key===MULTI_STATE.key){
+    S.collected[f.key]=val; S.idx++; renderPanel();
+  }
+  setTimeout(()=>askNext(),350);
+}
+
+/* ── 우측 패널 필드 수정 ── */
+function editField(fieldIdx){
+  if(S.done) return;
+  const f=S.allFields[fieldIdx];
+  if(!f) return;
+
+  // 해당 필드로 인덱스 되돌리기
+  S.idx=fieldIdx;
+  // 이후 수집 데이터 초기화 (해당 필드부터)
+  S.allFields.slice(fieldIdx).forEach(fi=>{ delete S.collected[fi.key]; });
+  S.done=false;
+  document.getElementById('send-btn').disabled=false;
+  document.getElementById('btn-submit').disabled=true;
+  document.getElementById('chip').textContent=S.lang==='ko'?'수정 중':'Editing';
+  document.getElementById('chip').className='chip saving';
+
+  // 달력/멀티셀렉트 잔여물 정리
+  document.querySelectorAll('.cal-msg,.multi-msg').forEach(e=>e.remove());
+  const inp=document.getElementById('inp');
+  inp.disabled=false;
+  inp.placeholder=S.lang==='ko'?'메시지를 입력하세요…':'Type your message…';
+
+  renderPanel();
+  addSysMsg(S.lang==='ko'?`"${f.ko}" 항목을 수정합니다.`:`Editing "${f.en}"`);
+  setTimeout(()=>askNext(),300);
+}
+
+/* ── Gemini API 직접 호출 (브라우저 직접 — CORS 없음) ── */
+async function callGemini(system, userMessage, maxTokens) {
+  const r = await fetch(GEMINI_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+      generationConfig: { maxOutputTokens: maxTokens || 400, temperature: 0.8 }
+    })
+  });
+  if (!r.ok) throw new Error('Gemini HTTP ' + r.status);
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+/* ── Microsoft MSAL 로그인 ── */
+async function msLogin() {
+  return new Promise((resolve, reject) => {
+    const authUrl = 'https://login.microsoftonline.com/' + MS_TENANT_ID + '/oauth2/v2.0/authorize'
+      + '?client_id=' + MS_CLIENT_ID
+      + '&response_type=token'
+      + '&redirect_uri=' + encodeURIComponent(MS_REDIRECT)
+      + '&scope=' + encodeURIComponent(MS_SCOPE)
+      + '&response_mode=fragment'
+      + '&prompt=select_account'
+      + '&nonce=' + Date.now();
+
+    const popup = window.open(authUrl, 'mslogin', 'width=500,height=600,left=400,top=100');
+    const timer = setInterval(() => {
+      try {
+        if (popup.closed) { clearInterval(timer); reject(new Error('로그인 창이 닫혔습니다.')); return; }
+        const hash = popup.location.hash;
+        if (hash && hash.includes('access_token')) {
+          clearInterval(timer);
+          popup.close();
+          const params = new URLSearchParams(hash.substring(1));
+          resolve(params.get('access_token'));
+        }
+      } catch(e) { /* cross-origin — 대기 */ }
+    }, 500);
+  });
+}
+
+/* ── MS Graph: SharePoint Excel에 행 추가 ── */
+async function callSave(row) {
+  if (!msToken) {
+    addSysMsg(S.lang==='ko'?'Microsoft 계정 로그인이 필요합니다. 팝업창을 확인해 주세요.':'Please sign in with your Microsoft account.');
+    msToken = await msLogin();
+  }
+
+  const h = { Authorization: 'Bearer ' + msToken, 'Content-Type': 'application/json' };
+  const base = 'https://graph.microsoft.com/v1.0';
+
+  const itemRes = await fetch(`${base}/shares/${SP_SHARE_ID}/driveItem`, { headers: h });
+  if (!itemRes.ok) { msToken=null; throw new Error('파일 접근 실패. 다시 시도해 주세요.'); }
+  const item    = await itemRes.json();
+  const driveId = item.parentReference?.driveId;
+  const itemId  = item.id;
+  const wb      = `${base}/drives/${driveId}/items/${itemId}/workbook/worksheets/${SP_SHEET_NAME}`;
+
+  const rangeRes  = await fetch(`${wb}/usedRange`, { headers: h });
+  const rangeData = rangeRes.ok ? await rangeRes.json() : null;
+  const rowCount  = rangeData?.rowCount || 0;
+
+  if (rowCount === 0) {
+    await fetch(`${wb}/range(address='A1')`, {
+      method: 'PATCH', headers: h,
+      body: JSON.stringify({ values: [Object.keys(row)] })
+    });
+  }
+
+  const nextRow   = rowCount + 1;
+  const colCount  = Object.keys(row).length;
+  const colLetter = colCount <= 26
+    ? String.fromCharCode(64 + colCount)
+    : String.fromCharCode(64 + Math.floor((colCount-1)/26)) + String.fromCharCode(64 + ((colCount-1)%26)+1);
+  const addr   = `A${nextRow}:${colLetter}${nextRow}`;
+  const values = [Object.values(row).map(v => String(v||''))];
+
+  const writeRes = await fetch(`${wb}/range(address='${addr}')`, {
+    method: 'PATCH', headers: h,
+    body: JSON.stringify({ values })
+  });
+  if (!writeRes.ok) {
+    const err = await writeRes.json().catch(()=>({}));
+    throw new Error(err.error?.message || 'Excel 저장 실패');
+  }
+  return { success: true };
+}
+
+/* ── 기존 callScript 호환 래퍼 ── */
+async function callScript(body) {
+  if (body.action === 'save') return callSave(body.row);
+  const text = await callGemini(body.system, body.userMessage, body.maxTokens);
+  return { text };
+}
+</script>
+</body>
+</html>
