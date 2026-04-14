@@ -253,16 +253,13 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 const GEMINI_KEY='AIzaSyCqlqk6qM4mo1NBUyXFj3ITyVkDeKEJdOE';
 const GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_KEY;
 
-/* ── Microsoft Graph API 설정 ── */
-const MS_CLIENT_ID  = 'a77824f7-391c-4b9a-8874-b4cb787b2955';
-const MS_TENANT_ID  = '1a869239-5ca3-402e-bc04-c0cb308ef1ab';
-const MS_REDIRECT   = 'https://marketingmedit079.github.io/marketingguide/';
-const MS_SCOPE      = 'Files.ReadWrite Sites.ReadWrite.All User.Read';
-/* SharePoint Excel 파일 경로 */
-const SP_SHARE_ID   = 'u!aHR0cHM6Ly9tZWRpdGNvbXBhbnktbXkuc2hhcmVwb2ludC5jb20vOng6L2cvcGVyc29uYWwvaHl1bmp1bmdfa2ltX21lZGl0X2NvbS9JUURGLVdYeXNUcEtTYi1meEgtT0JwN1dBUzBqbnR5ckpVQVJMaE1TQ0hyanM4dz9lPWR4VzdDeg';
-const SP_SHEET_NAME = 'Requests';
+/* ── Google Apps Script 설정 ── */
+// Google Apps Script 배포 URL을 여기에 입력하세요
+// 배포 방법: https://script.google.com → 배포 → 웹 앱 → 실행권한: 자신으로 실행 → 모든 사용자 액세스
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywhSV8UyPH_skwxWf_KxXpYD5XxVAeS-cDotml1n4fLxoeAelVUbxladyzYD_4urnqyQ/exec';
 
-let msToken = null; /* 로그인 후 저장 */
+// 아래 코드는 Google Apps Script URL로 자동 대체됩니다
+let gs_url = SCRIPT_URL;
 
 
 function switchTab(tab){
@@ -1056,9 +1053,16 @@ async function callSave(row) {
   return { success: true };
 }
 
-/* ── 기존 callScript 호환 래퍼 ── */
+/* ── Google Apps Script 호출 ── */
 async function callScript(body) {
-  if (body.action === 'save') return callSave(body.row);
+  if (body.action === 'save') {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('Google Sheets 저장 실패');
+    return await res.json();
+  }
   const text = await callGemini(body.system, body.userMessage, body.maxTokens);
   return { text };
 }
